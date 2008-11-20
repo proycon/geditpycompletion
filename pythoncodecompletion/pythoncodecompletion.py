@@ -65,6 +65,24 @@ class CompletionWindow(gtk.Window):
             self.select_previous()
         elif event.keyval == gtk.keysyms.Down:
             self.select_next()
+        else:
+            self.input += event.string
+            self.find_selection()
+            
+    def find_selection(self):
+        row = 0
+        for completion in self.store:
+            if completion[0].startswith(self.input): break
+            row += 1
+        if row == len(self.store): 
+            self.hide()
+            return
+        selection = self.view.get_selection()
+        selection.unselect_all()
+        selection.select_path(row)
+        self.view.scroll_to_cell(row)
+        self.text_buffer.set_text(self.completions[self.get_selected()]['info'])
+
 
     def complete(self):
         self.complete_callback(self.completions[self.get_selected()]['completion'])
@@ -137,7 +155,7 @@ class CompletionWindow(gtk.Window):
 
     def set_completions(self, completions):
         """Set the completions to display."""
-
+        self.input = u''
         self.completions = completions
         self.completions.reverse()
         self.resize(1, 1)
