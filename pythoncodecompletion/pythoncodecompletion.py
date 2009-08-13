@@ -25,9 +25,8 @@ import gobject
 import gtk
 import re
 from complete import complete
-import ConfigurationDialog
-import Configuration
-import sys
+import configurationdialog
+import configuration
 
 class CompletionWindow(gtk.Window):
 
@@ -248,7 +247,7 @@ class CompletionPlugin(gedit.Plugin):
 
     def create_configure_dialog(self):
         """Creates and displays a ConfigurationDialog."""
-        dlg = ConfigurationDialog.ConfigurationDialog()
+        dlg = configurationdialog.ConfigurationDialog()
         return dlg
 
     def deactivate(self, window):
@@ -315,26 +314,26 @@ class CompletionPlugin(gedit.Plugin):
 
     def on_view_key_press_event(self, view, event):
         """Display the completion window or complete the current word."""
-        
-        if self.window.get_active_document().get_mime_type() != 'text/x-python':
+        active_doc = self.window.get_active_document()
+        if active_doc is None or active_doc.get_mime_type() != 'text/x-python':
             return self.cancel()
 
         # FIXME This might result in a clash with other plugins eg. snippets
         # FIXME This code is not portable! 
         #  The "Alt"-key might be mapped to something else
         # TODO Find out which keybinding are already in use.
-        keybinding = Configuration.getKeybindingCompleteTuple()
+        keybinding = configuration.getKeybindingCompleteTuple()
         ctrl_pressed = (event.state & gtk.gdk.CONTROL_MASK) == gtk.gdk.CONTROL_MASK
         alt_pressed = (event.state & gtk.gdk.MOD1_MASK) == gtk.gdk.MOD1_MASK
         shift_pressed = (event.state & gtk.gdk.SHIFT_MASK) == gtk.gdk.SHIFT_MASK
-        keyval = gtk.gdk.keyval_from_name(keybinding[Configuration.KEY])
+        keyval = gtk.gdk.keyval_from_name(keybinding[configuration.KEY])
         key_pressed = (event.keyval == keyval)
 
         # It's ok if a key is pressed and it's needed or
         # if a key is not pressed if it isn't needed.
-        ctrl_ok = not (keybinding[Configuration.MODIFIER_CTRL] ^ ctrl_pressed )
-        alt_ok =  not (keybinding[Configuration.MODIFIER_ALT] ^ alt_pressed )
-        shift_ok = not (keybinding[Configuration.MODIFIER_SHIFT] ^ shift_pressed )
+        ctrl_ok = not (keybinding[configuration.MODIFIER_CTRL] ^ ctrl_pressed )
+        alt_ok =  not (keybinding[configuration.MODIFIER_ALT] ^ alt_pressed )
+        shift_ok = not (keybinding[configuration.MODIFIER_SHIFT] ^ shift_pressed )
 
         if ctrl_ok and alt_ok and shift_ok and key_pressed or event.keyval == gtk.keysyms.period:
             return self.display_completions(view, event)
