@@ -27,6 +27,7 @@ import re
 from complete import complete
 import ConfigurationDialog
 import Configuration
+import sys
 
 class CompletionWindow(gtk.Window):
 
@@ -45,7 +46,7 @@ class CompletionWindow(gtk.Window):
         self.text = gtk.TextView()
         self.text_buffer = gtk.TextBuffer()
         self.text.set_buffer(self.text_buffer)
-        self.text.set_size_request(300, 200)
+        self.text.set_size_request(320, 200)
         self.text.set_sensitive(False)
         self.init_tree_view()
         self.init_frame()
@@ -57,17 +58,36 @@ class CompletionWindow(gtk.Window):
     def key_press_event(self, widget, event):
         if event.keyval == gtk.keysyms.Escape:
             self.hide()
-        elif event.keyval == gtk.keysyms.BackSpace:
-            self.hide()
         elif event.keyval in (gtk.keysyms.Return, gtk.keysyms.Tab):
             self.complete()
-        elif event.keyval == gtk.keysyms.Up:
+        elif event.keyval in (gtk.keysyms.Up, gtk.keysyms.Page_Up):
             self.select_previous()
-        elif event.keyval == gtk.keysyms.Down:
+        elif event.keyval in (gtk.keysyms.Down, gtk.keysyms.Page_Down):
             self.select_next()
+        elif event.keyval == gtk.keysyms.Escape:
+            self.hide()
+        elif event.keyval == gtk.keysyms.BackSpace:
+            buffer = self.get_parent_buffer()
+            cursor=buffer.get_iter_at_mark(buffer.get_insert())
+            buffer.backspace(cursor,True,True)
+            if not self.input:
+                self.hide()
+            else:
+                self.input = self.input[:-1]
+        elif event.keyval == gtk.keysyms.period:
+            self.hide()
         else:
             self.input += event.string
+            buffer = self.get_parent_buffer()
+            buffer.insert_at_cursor(event.string)
             self.find_selection()
+
+    def get_parent_buffer(self):
+            app = gedit.app_get_default()
+            window = app.get_active_window()
+            tab = window.get_active_tab()
+            view = tab.get_view()
+            return view.get_buffer() 
             
     def find_selection(self):
         row = 0
@@ -85,7 +105,9 @@ class CompletionWindow(gtk.Window):
 
 
     def complete(self):
-        self.complete_callback(self.completions[self.get_selected()]['completion'])
+        completion = self.completions[self.get_selected()]['completion']
+        completion = completion[len(self.input):]
+        self.complete_callback(completion)
 
     def focus_out_event(self, *args):
         self.hide()
